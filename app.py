@@ -3,10 +3,6 @@ from flask import Flask, request, jsonify, render_template
 import pickle
 import numpy as np
 import os
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -84,9 +80,8 @@ def predict():
             "color": color
         })
         
-except Exception as e:
-    logger.error(f"Prediction error: {str(e)}")
-    return jsonify({"success": False, "error": "An error occurred during prediction"}), 400
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
 
 @app.route('/retrain', methods=['POST'])
 def retrain_model():
