@@ -1,0 +1,177 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diabetes Prediction System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🩺 Diabetes Prediction System</h1>
+            <p>Enter patient details to predict diabetes risk</p>
+        </header>
+
+        <div class="main-content">
+            <div class="form-container">
+                <form id="predictionForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="pregnancies">Pregnancies:</label>
+                            <input type="number" id="pregnancies" name="pregnancies" min="0" max="20" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="glucose">Glucose (mg/dL):</label>
+                            <input type="number" id="glucose" name="glucose" min="0" max="300" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="bloodpressure">Blood Pressure (mm Hg):</label>
+                            <input type="number" id="bloodpressure" name="bloodpressure" min="0" max="150" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="skinthickness">Skin Thickness (mm):</label>
+                            <input type="number" id="skinthickness" name="skinthickness" min="0" max="100" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="insulin">Insulin (mu U/ml):</label>
+                            <input type="number" id="insulin" name="insulin" min="0" max="900" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="bmi">BMI:</label>
+                            <input type="number" id="bmi" name="bmi" min="0" max="70" step="0.1" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="diabetespedigree">Diabetes Pedigree:</label>
+                            <input type="number" id="diabetespedigree" name="diabetespedigree" min="0" max="2.5" step="0.001" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="age">Age:</label>
+                            <input type="number" id="age" name="age" min="0" max="120" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn predict-btn">Predict Diabetes Risk</button>
+                </form>
+
+                <button onclick="retrainModel()" class="btn retrain-btn">Retrain Model</button>
+            </div>
+
+            <div class="result-container" id="resultContainer" style="display: none;">
+                <h2>Prediction Result</h2>
+                <div class="result-card" id="resultCard">
+                    <div class="risk-level" id="riskLevel"></div>
+                    <div class="probability" id="probability"></div>
+                    <div class="message" id="message"></div>
+                    <div class="prediction" id="prediction"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analyzing patient data...</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('predictionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            predictDiabetes();
+        });
+
+        function predictDiabetes() {
+            const form = document.getElementById('predictionForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultContainer').style.display = 'none';
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                document.getElementById('loading').style.display = 'none';
+                
+                if (result.success) {
+                    displayResult(result);
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                alert('Error: ' + error);
+            });
+        }
+
+        function displayResult(result) {
+            const card = document.getElementById('resultCard');
+            card.style.borderColor = result.color;
+
+            document.getElementById('riskLevel').innerHTML = 
+                `<h3 style="color: ${result.color}">${result.risk_level} Risk</h3>`;
+            
+            document.getElementById('probability').innerHTML = 
+                `<strong>Probability:</strong> ${result.probability}%`;
+            
+            document.getElementById('message').innerHTML = 
+                `<p>${result.message}</p>`;
+            
+            document.getElementById('prediction').innerHTML = 
+                `<strong>Prediction:</strong> ${result.prediction === 1 ? 'Diabetes Detected' : 'No Diabetes'}`;
+
+            document.getElementById('resultContainer').style.display = 'block';
+        }
+
+        function retrainModel() {
+            if (confirm('Are you sure you want to retrain the model? This may take a few moments.')) {
+                fetch('/retrain', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert('Model retrained successfully!');
+                    } else {
+                        alert('Error: ' + result.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error);
+                });
+            }
+        }
+
+        // Fill form with sample data for testing
+        function fillSampleData() {
+            document.getElementById('pregnancies').value = 2;
+            document.getElementById('glucose').value = 138;
+            document.getElementById('bloodpressure').value = 62;
+            document.getElementById('skinthickness').value = 35;
+            document.getElementById('insulin').value = 0;
+            document.getElementById('bmi').value = 33.6;
+            document.getElementById('diabetespedigree').value = 0.127;
+            document.getElementById('age').value = 47;
+        }
+
+        // Uncomment the line below to enable sample data button
+        // fillSampleData();
+    </script>
+</body>
+</html>
